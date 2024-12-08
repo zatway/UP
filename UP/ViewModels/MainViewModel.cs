@@ -1,8 +1,10 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Windows;
 using System.Windows.Input;
 using UP.Command;
 using EKZ.Services;
+using EKZ.Views;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
 using Microsoft.Win32;
@@ -16,39 +18,35 @@ namespace EKZ.ViewModels
         public string SearchText { get; set; }
         public ObservableCollection<ReportRow> FilteredData { get; set; } = new ObservableCollection<ReportRow>();
 
-        private readonly MyDbContext DbContext;
+        private readonly MyDbContext _dbContext;
 
         public ICommand ApplyFilterCommand { get; }
         public ICommand ResetFilterCommand { get; }
         public ICommand GeneratePdfCommand { get; }
         public ICommand CancelFilterCommand { get; }
+        public ICommand GoCarsReportCommand { get; }
+        public ICommand GoRepairSummaryCommand { get; }
 
         public MainViewModel(MyDbContext myDbContext)
         {
-            DbContext = myDbContext;
+            _dbContext = myDbContext;
 
             ApplyFilterCommand = new RelayCommand(ApplyFilter);
             ResetFilterCommand = new RelayCommand(ResetFilter);
             GeneratePdfCommand = new RelayCommand(GeneratePdf);
-            CancelFilterCommand = new RelayCommand(CancelFilter);
-
-            LoadData();
-        }
-
-        private void CancelFilter(object parameter)
-        {
-            SearchText = string.Empty;
-            SelectedFilter = null;
+            CancelFilterCommand = new RelayCommand(ResetFilter);
+            GoCarsReportCommand = new RelayCommand(GoCarsReport);
+            GoRepairSummaryCommand = new RelayCommand(GoRepairSummary);
 
             LoadData();
         }
         
         private void LoadData()
         {
-            var data = from request in DbContext.Requests
-                join client in DbContext.Clients on request.ClientID equals client.ID
-                join repair in DbContext.Repairs on request.ID equals repair.RequestID
-                join service in DbContext.Services on repair.ServiceID equals service.ID
+            var data = from request in _dbContext.Requests
+                join client in _dbContext.Clients on request.ClientID equals client.ID
+                join repair in _dbContext.Repairs on request.ID equals repair.RequestID
+                join service in _dbContext.Services on repair.ServiceID equals service.ID
                 select new ReportRow
                 {
                     RequestId = request.ID,
@@ -62,14 +60,38 @@ namespace EKZ.ViewModels
             FilteredData = new ObservableCollection<ReportRow>(data.ToList());
         }
 
+        private void GoCarsReport(object parameter)
+        {
+            var currentWindow = parameter as Window;
+            currentWindow?.Close(); // Закрытие текущего окна
+
+            var mainView = new CarsReportView()
+            {
+                DataContext = new CarsReportViewModell(_dbContext) // Привязка DataContext
+            };
+            mainView.Show();
+        }
+
+        private void GoRepairSummary(object parameter)
+        {
+            var currentWindow = parameter as Window;
+            currentWindow?.Close(); // Закрытие текущего окна
+
+            var mainView = new RepairSummary()
+            {
+                DataContext = new RepairSummaryViewModel(_dbContext) // Привязка DataContext
+            };
+            mainView.Show();
+        }
+        
         private void ApplyFilter(object parameter)
         {
-            var data = from request in DbContext.Requests
-                join client in DbContext.Clients on request.ClientID equals client.ID into clients
+            var data = from request in _dbContext.Requests
+                join client in _dbContext.Clients on request.ClientID equals client.ID into clients
                 from client in clients.DefaultIfEmpty()
-                join repair in DbContext.Repairs on request.ID equals repair.RequestID into repairs
+                join repair in _dbContext.Repairs on request.ID equals repair.RequestID into repairs
                 from repair in repairs.DefaultIfEmpty()
-                join service in DbContext.Services on repair.ServiceID equals service.ID into services
+                join service in _dbContext.Services on repair.ServiceID equals service.ID into services
                 from service in services.DefaultIfEmpty()
                 select new ReportRow
                 {

@@ -19,6 +19,8 @@ namespace EKZ.Services
         public DbSet<Repair> Repairs { get; set; }
         public DbSet<Inventory> Inventories { get; set; }
         public DbSet<Sale> Sales { get; set; }
+        public DbSet<CarsReport> CarsReport { get; set; }
+        public DbSet<RepairSummary> RepairSummary { get; set; }
 
         /// <summary>
         /// Настройка подключения к базе данных.
@@ -26,7 +28,7 @@ namespace EKZ.Services
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder
-                .UseNpgsql("Host=localhost;Port=5432;Database=testing;Username=postgres;Password=123")
+                .UseNpgsql("Host=localhost;Port=5432;Database=lada-service;Username=postgres;Password=123")
                 .EnableSensitiveDataLogging();    // Логирование данных (только для разработки)
         }
 
@@ -84,6 +86,10 @@ namespace EKZ.Services
                 .HasOne(s => s.Employee)
                 .WithMany()
                 .HasForeignKey(s => s.EmployeeID);
+            
+            
+            modelBuilder.Entity<CarsReport>().ToView("CarsReport").HasNoKey();
+            modelBuilder.Entity<RepairSummary>().ToView("RepairSummary").HasNoKey();
         }
 
         /// <summary>
@@ -97,7 +103,7 @@ namespace EKZ.Services
             }
 
             // Заполнение данными
-            var cars = Enumerable.Range(1, 20).Select(i => new Car
+            var cars = Enumerable.Range(1, 40).Select(i => new Car
             {
                 Brand = "Brand" + i,
                 Model = "Model" + i,
@@ -107,7 +113,7 @@ namespace EKZ.Services
                 VIN = "VIN" + i.ToString("D17")
             }).ToList();
 
-            var clients = Enumerable.Range(1, 20).Select(i => new Client
+            var clients = Enumerable.Range(1, 40).Select(i => new Client
             {
                 FullName = $"Client {i}",
                 Phone = $"+7900123456{i:D2}",
@@ -115,7 +121,7 @@ namespace EKZ.Services
                 Address = $"{i} Example St, City{i}"
             }).ToList();
 
-            var requests = Enumerable.Range(1, 20).Select(i => new Request
+            var requests = Enumerable.Range(1, 40).Select(i => new Request
             {
                 CreationDate = DateTime.UtcNow.AddDays(-i),
                 ClientID = i,
@@ -123,14 +129,14 @@ namespace EKZ.Services
                 Status = i % 3 == 0 ? "completed" : (i % 2 == 0 ? "in progress" : "new")
             }).ToList();
 
-            var services = Enumerable.Range(1, 20).Select(i => new Service
+            var services = Enumerable.Range(1, 40).Select(i => new Service
             {
                 Name = $"Service {i}",
                 Description = $"Description for service {i}",
                 Cost = 50 + i * 10
             }).ToList();
 
-            var employees = Enumerable.Range(1, 20).Select(i => new Employee
+            var employees = Enumerable.Range(1, 40).Select(i => new Employee
             {
                 FullName = $"Employee {i}",
                 Position = i % 2 == 0 ? "Technician" : "Manager",
@@ -138,7 +144,7 @@ namespace EKZ.Services
                 Email = $"employee{i}@example.com"
             }).ToList();
 
-            var repairs = Enumerable.Range(1, 20).Select(i => new Repair
+            var repairs = Enumerable.Range(1, 40).Select(i => new Repair
             {
                 RequestID = i,
                 ServiceID = i,
@@ -147,14 +153,14 @@ namespace EKZ.Services
                 Cost = 100 + (i * 5)
             }).ToList();
 
-            var inventories = Enumerable.Range(1, 20).Select(i => new Inventory
+            var inventories = Enumerable.Range(1, 40).Select(i => new Inventory
             {
                 Name = $"Inventory {i}",
                 Quantity = 10 + i,
                 PricePerUnit = 5.00M + i
             }).ToList();
 
-            var sales = Enumerable.Range(1, 20).Select(i => new Sale
+            var sales = Enumerable.Range(1, 40).Select(i => new Sale
             {
                 CarID = (i % 10) + 1,
                 ClientID = i,
@@ -165,16 +171,23 @@ namespace EKZ.Services
 
             // Добавление данных в базу
             Cars.AddRange(cars);
+            SaveChanges();
             Clients.AddRange(clients);
+            SaveChanges();
             Requests.AddRange(requests);
+            SaveChanges();
             Services.AddRange(services);
+            SaveChanges();
             Employees.AddRange(employees);
+            SaveChanges();
             Repairs.AddRange(repairs);
+            SaveChanges();
             Inventories.AddRange(inventories);
+            SaveChanges();
             Sales.AddRange(sales);
+            SaveChanges();
 
             // Сохранение изменений
-            SaveChanges();
         }
     }
 }

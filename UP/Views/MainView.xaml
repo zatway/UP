@@ -17,6 +17,8 @@
             <Button Content="Применить" Width="100" Margin="0,0,10,0" Command="{Binding ApplyFilterCommand}" />
             <Button Content="Сбросить" Width="100" Margin="0,0,10,0" Command="{Binding ResetFilterCommand}" />
             <Button Content="Отменить" Width="100" Command="{Binding CancelFilterCommand}" />
+            <Button Content="CarsReport" Width="100" Margin="80, 0 , 0, 0" Command="{Binding GoCarsReportCommand}" />
+            <Button Content="RepairSummary" Width="100" Margin="10, 0 , 0, 0" Command="{Binding GoRepairSummaryCommand}" />
         </StackPanel>
 
         <DataGrid ItemsSource="{Binding FilteredData}" 
