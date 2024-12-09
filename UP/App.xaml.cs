@@ -27,11 +27,12 @@ public partial class App : Application
             ApplyMigrations(dbContext);
         }
     }
+    
     private static void ApplyMigrations(MyDbContext dbContext)
     {
         try
         {
-            dbContext.Database.GetMigrations();
+            dbContext.Database.Migrate();
         }
         catch (System.Exception ex)
         {

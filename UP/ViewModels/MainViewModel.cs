@@ -2,12 +2,15 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
+using EKZ.Models;
 using UP.Command;
 using EKZ.Services;
 using EKZ.Views;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Win32;
+using RepairSummary = EKZ.Views.RepairSummary;
 
 namespace EKZ.ViewModels
 {
@@ -19,17 +22,25 @@ namespace EKZ.ViewModels
         public ObservableCollection<ReportRow> FilteredData { get; set; } = new ObservableCollection<ReportRow>();
 
         private readonly MyDbContext _dbContext;
+        private readonly DataService _dataService;
 
+        public readonly string Role;
         public ICommand ApplyFilterCommand { get; }
         public ICommand ResetFilterCommand { get; }
         public ICommand GeneratePdfCommand { get; }
         public ICommand CancelFilterCommand { get; }
         public ICommand GoCarsReportCommand { get; }
         public ICommand GoRepairSummaryCommand { get; }
+        public ICommand AddCommand { get; }
+        public ICommand UpdateCommand { get; }
+        public ICommand DeleteCommand { get; }
 
-        public MainViewModel(MyDbContext myDbContext)
+        public MainViewModel(MyDbContext myDbContext, DataService dataService, string role)
         {
             _dbContext = myDbContext;
+            _dataService = dataService;
+            Role = role;
+            OnPropertyChanged("Role");
 
             ApplyFilterCommand = new RelayCommand(ApplyFilter);
             ResetFilterCommand = new RelayCommand(ResetFilter);
@@ -37,6 +48,8 @@ namespace EKZ.ViewModels
             CancelFilterCommand = new RelayCommand(ResetFilter);
             GoCarsReportCommand = new RelayCommand(GoCarsReport);
             GoRepairSummaryCommand = new RelayCommand(GoRepairSummary);
+            AddCommand = new RelayCommand(EditСlient);
+            UpdateCommand = new RelayCommand(UpdateRecord);
 
             LoadData();
         }
@@ -60,6 +73,38 @@ namespace EKZ.ViewModels
             FilteredData = new ObservableCollection<ReportRow>(data.ToList());
         }
 
+        private async void EditСlient(object parameter)
+        {
+                if (Role == "admin")
+                { 
+                    var currentWindow = parameter as Window;
+                    currentWindow?.Close(); // Закрытие текущего окна
+
+                    var clientAddedView = new ClientAddedView()
+                    {
+                        DataContext = new ClientAddedViewModel(_dbContext) // Привязка DataContext
+                    };
+                    clientAddedView.Show();
+                }
+                else
+                {
+                    MessageBox.Show("У вас нет прав для выполнения этого действия.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+        }
+
+        
+            private async void UpdateRecord(object parameter)
+            {
+                // Пример обновления записи
+                var requestToUpdate = FilteredData.FirstOrDefault();
+                if (requestToUpdate != null)
+                {
+                    requestToUpdate.RequestStatus = "Обновлено"; // Пример обновления
+                    await _dataService.UpdateAsync(requestToUpdate);
+                    LoadData(); // Перезагружаем данные
+                }
+            }
+        
         private void GoCarsReport(object parameter)
         {
             var currentWindow = parameter as Window;
@@ -77,11 +122,11 @@ namespace EKZ.ViewModels
             var currentWindow = parameter as Window;
             currentWindow?.Close(); // Закрытие текущего окна
 
-            var mainView = new RepairSummary()
+            var repairSummaryView = new RepairSummary()
             {
                 DataContext = new RepairSummaryViewModel(_dbContext) // Привязка DataContext
             };
-            mainView.Show();
+            repairSummaryView.Show();
         }
         
         private void ApplyFilter(object parameter)

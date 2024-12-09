@@ -1,6 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
-using EKZ.Models;
-using Microsoft.Extensions.Logging;
+﻿using EKZ.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace EKZ.Services
 {
@@ -10,7 +9,6 @@ namespace EKZ.Services
     public class MyDbContext : DbContext
     {
         // Сущности
-        public DbSet<User> Users { get; set; }
         public DbSet<Car> Cars { get; set; }
         public DbSet<Client> Clients { get; set; }
         public DbSet<Request> Requests { get; set; }
@@ -21,31 +19,22 @@ namespace EKZ.Services
         public DbSet<Sale> Sales { get; set; }
         public DbSet<CarsReport> CarsReport { get; set; }
         public DbSet<RepairSummary> RepairSummary { get; set; }
-
-        /// <summary>
-        /// Настройка подключения к базе данных.
-        /// </summary>
+        public DbSet<User> Users { get; set; }
+        public DbSet<Role> Roles { get; set; }
+        public DbSet<UserRole> UserRoles { get; set; }
+        
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder
-                .UseNpgsql("Host=localhost;Port=5432;Database=lada-service;Username=postgres;Password=123")
-                .EnableSensitiveDataLogging();    // Логирование данных (только для разработки)
+                .UseNpgsql("Host=localhost;Port=5432;Database=lada-service-db;Username=postgres;Password=123")
+                .EnableSensitiveDataLogging();  
         }
-
+        
         /// <summary>
         /// Конфигурация моделей и их отношений.
         /// </summary>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Конфигурация сущности User
-            modelBuilder.Entity<User>(entity =>
-            {
-                entity.ToTable("user");
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Username).IsRequired().HasMaxLength(255);
-                entity.Property(e => e.Password).IsRequired().HasMaxLength(255);
-            });
-
             // Связи между сущностями
             modelBuilder.Entity<Client>()
                 .HasMany(c => c.Requests)
@@ -86,6 +75,19 @@ namespace EKZ.Services
                 .HasOne(s => s.Employee)
                 .WithMany()
                 .HasForeignKey(s => s.EmployeeID);
+            
+            modelBuilder.Entity<UserRole>()
+                .HasKey(ur => new { ur.UserId, ur.RoleId }); // Композитный ключ
+
+            modelBuilder.Entity<UserRole>()
+                .HasOne(ur => ur.User)
+                .WithMany(u => u.UserRoles)
+                .HasForeignKey(ur => ur.UserId);
+
+            modelBuilder.Entity<UserRole>()
+                .HasOne(ur => ur.Role)
+                .WithMany(r => r.UserRoles)
+                .HasForeignKey(ur => ur.RoleId);
             
             
             modelBuilder.Entity<CarsReport>().ToView("CarsReport").HasNoKey();

@@ -90,87 +90,120 @@ namespace EKZ.ViewModels
         }  
         
         // Метод для выполнения входа
-        private void ExecuteLogin(object parameter)
+        public void ExecuteLogin(object parameter)
         {
-            // Проверка правильности ввода капчи
             if (CaptchaInput != _captchaText)
             {
                 MessageBox.Show("Капча введена некорректно", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                GenerateCaptcha(); // Генерация новой капчи
+                GenerateCaptcha();
                 return;
             }
 
-            // Проверка на пустые поля
             if (string.IsNullOrWhiteSpace(Username) || string.IsNullOrWhiteSpace(Password))
             {
                 MessageBox.Show("Все поля должны быть заполнены.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
-            // Хеширование пароля
-            var hashedInputPassword = HashPassword(Password);
+            var hashedPassword = HashPassword(Password);
+            var user = _context.Users.FirstOrDefault(u => u.Username == Username && u.Password == hashedPassword);
 
-            // Поиск пользователя по имени и хешированному паролю
-            var user = _context.Users.FirstOrDefault(u => u.Username == Username && u.Password == hashedInputPassword);
-
-            // Если пользователь найден, закрываем текущее окно и открываем главное окно
             if (user != null)
             {
-                var currentWindow = parameter as Window;
-                currentWindow?.Close(); // Закрытие текущего окна
+                var role = _context.UserRoles
+                    .Include(ur => ur.Role)
+                    .FirstOrDefault(ur => ur.UserId == user.Id)?.Role.Name;
+                MessageBox.Show(role, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
 
-                var mainView = new MainView
-                {
-                    DataContext = new MainViewModel(_context) // Привязка DataContext
-                };
-                mainView.Show(); // Открытие главного окна
+                    var currentWindow = parameter as Window;
+                    currentWindow?.Close();
+                    
+                
+                    var mainView = new MainView()
+                    {
+                        DataContext = new MainViewModel(_context, _dataService, role) // Привязка DataContext
+                    };
+                    mainView.Show();
+                    CurrentRole.Role = role;
             }
             else
             {
-                // Если пользователь не найден или пароль неверен
-                MessageBox.Show("Пользователя не существует или пароль неверен.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Неверное имя пользователя или пароль.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
         // Метод для выполнения регистрации
         private async void ExecuteRegister(object parameter)
-        {
-            // Проверка правильности ввода капчи
-            if (CaptchaInput != _captchaText)
-            {
-                MessageBox.Show("Капча введена некорректно", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                GenerateCaptcha(); // Генерация новой капчи
-                return;
-            }
+{
+    // Проверка правильности ввода капчи
+    if (CaptchaInput != _captchaText)
+    {
+        MessageBox.Show("Капча введена некорректно", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        GenerateCaptcha(); // Генерация новой капчи
+        return;
+    }
 
-            // Проверка на пустые поля
-            if (string.IsNullOrWhiteSpace(Username) || string.IsNullOrWhiteSpace(Password))
-            {
-                MessageBox.Show("Все поля должны быть заполнены.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
+    // Проверка на пустые поля
+    if (string.IsNullOrWhiteSpace(Username) || string.IsNullOrWhiteSpace(Password))
+    {
+        MessageBox.Show("Все поля должны быть заполнены.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        return;
+    }
 
-            // Хеширование пароля
-            var hashedPassword = HashPassword(Password);
+    // Хеширование пароля
+    var hashedPassword = HashPassword(Password);
 
-            // Проверка, существует ли уже пользователь с таким именем
-            var userExists = await _context.Users.AnyAsync(u => u.Username == Username);
+    // Проверка, существует ли уже пользователь с таким именем
+    var userExists = await _context.Users.AnyAsync(u => u.Username == Username);
 
-            // Если пользователь уже существует, выводим сообщение об ошибке
-            if (userExists)
-            {
-                MessageBox.Show("Такой пользователь уже существует.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
+    // Если пользователь уже существует, выводим сообщение об ошибке
+    if (userExists)
+    {
+        MessageBox.Show("Такой пользователь уже существует.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        return;
+    }
 
-            // Создание нового пользователя
-            var newUser = new User { Username = Username, Password = hashedPassword };
-            await _context.Users.AddAsync(newUser); // Добавление пользователя в базу данных
-            await _context.SaveChangesAsync(); // Сохранение изменений в базе данных
+    // Создание нового пользователя
+    var newUser = new User { Username = Username, Password = hashedPassword };
+    await _context.Users.AddAsync(newUser); // Добавление пользователя в базу данных
+    await _context.SaveChangesAsync(); // Сохранение изменений в базе данных
 
-            MessageBox.Show("Регистрация прошла успешно! Теперь вы можете войти в систему.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
+    // Проверка и добавление ролей, если их нет
+    var clientRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "client");
+    if (clientRole == null)
+    {
+        clientRole = new Role { Name = "client" };
+        await _context.Roles.AddAsync(clientRole);
+        await _context.SaveChangesAsync();
+    }
 
+    var adminRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "admin");
+    if (adminRole == null)
+    {
+        adminRole = new Role { Name = "admin" };
+        await _context.Roles.AddAsync(adminRole);
+        await _context.SaveChangesAsync();
+    }
+
+    // Добавление роли в таблицу UserRoles
+    if (Username == "admin" && Password == "admin")
+    {
+        // Присваиваем роль admin
+        var userRole = new UserRole { UserId = newUser.Id, RoleId = adminRole.Id };
+        await _context.UserRoles.AddAsync(userRole);
+    }
+    else
+    {
+        // Присваиваем роль client
+        var userRole = new UserRole { UserId = newUser.Id, RoleId = clientRole.Id };
+        await _context.UserRoles.AddAsync(userRole);
+    }
+
+    await _context.SaveChangesAsync(); // Сохранение изменений в таблице UserRoles
+
+    MessageBox.Show("Регистрация прошла успешно! Теперь вы можете войти в систему.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+}
+        
         // Метод для генерации капчи
         private void GenerateCaptcha()
         {

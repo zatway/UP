@@ -22,17 +22,25 @@
         </StackPanel>
 
         <DataGrid ItemsSource="{Binding FilteredData}" 
-                  Margin="0, 30, 0 , 0"
+                  Margin="0, 30, 0 , 25"
                   AutoGenerateColumns="True" 
                   IsReadOnly="True"
                   VerticalAlignment="Stretch"
                   HorizontalAlignment="Stretch" />
 
-        <Button Content="Сформировать PDF"
-                Command="{Binding GeneratePdfCommand}"
-                VerticalAlignment="Bottom" 
-                HorizontalAlignment="Right" 
-                Margin="0,10,0,0"
-                Width="200" />
+        <Button Content="Редактировать клиентов"
+                        Command="{Binding AddCommand}"
+                        VerticalAlignment="Bottom" 
+                        HorizontalAlignment="Left" 
+                        Margin="10,0,0,0" Width="200" />
+        
+        <TextBox Text="{Binding Role}" Margin="10,0,0,0" Width="200" Height="20" VerticalAlignment="Bottom" 
+                 HorizontalAlignment="Center" Foreground="Black"> </TextBox>
+                <Button Content="Сформировать PDF"
+                        Command="{Binding GeneratePdfCommand}"
+                        VerticalAlignment="Bottom" 
+                        HorizontalAlignment="Right" 
+                        Margin="10,0,0,0" Width="200" />
+
     </Grid>
 </Window>
