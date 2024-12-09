@@ -113,7 +113,7 @@ namespace EKZ.ViewModels
                 var role = _context.UserRoles
                     .Include(ur => ur.Role)
                     .FirstOrDefault(ur => ur.UserId == user.Id)?.Role.Name;
-                MessageBox.Show(role, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(role, "Роль", MessageBoxButton.OK, MessageBoxImage.Information);
 
                     var currentWindow = parameter as Window;
                     currentWindow?.Close();
